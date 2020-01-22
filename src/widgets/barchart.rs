@@ -36,10 +36,14 @@ pub struct BarChart<'a> {
     value_style: Style,
     /// Style of the labels printed under each bar
     label_style: Style,
-    /// Style for the widget
+    /// Default style for the bars
     style: Style,
+    /// Style for the highlighted bar
+    highlight_style: Style,
     /// Slice of (label, value) pair to plot on the chart
     data: &'a [(&'a str, u64)],
+    /// Index of the one selected
+    selected: Option<usize>,
     /// Value necessary for a bar to reach the maximum height (if no value is specified,
     /// the maximum value in the data is taken as reference)
     max: Option<u64>,
@@ -53,12 +57,14 @@ impl<'a> Default for BarChart<'a> {
             block: None,
             max: None,
             data: &[],
+            selected: None,
             values: Vec::new(),
             bar_width: 1,
             bar_gap: 1,
             value_style: Default::default(),
             label_style: Default::default(),
             style: Default::default(),
+            highlight_style: Default::default(),
         }
     }
 }
@@ -100,6 +106,14 @@ impl<'a> BarChart<'a> {
     }
     pub fn style(mut self, style: Style) -> BarChart<'a> {
         self.style = style;
+        self
+    }
+    pub fn highlight_style(mut self, highlight_style: Style) -> BarChart<'a> {
+        self.highlight_style = highlight_style;
+        self
+    }
+    pub fn select(mut self, index: Option<usize>) -> BarChart<'a> {
+        self.selected = index;
         self
     }
 }
@@ -152,13 +166,19 @@ impl<'a> Widget for BarChart<'a> {
                     _ => bar::FULL,
                 };
 
+                let style = if Some(i) == self.selected {
+                    self.highlight_style
+                } else {
+                    self.style
+                };
+
                 for x in 0..self.bar_width {
                     buf.get_mut(
                         chart_area.left() + i as u16 * (self.bar_width + self.bar_gap) + x,
                         chart_area.top() + j,
                     )
                     .set_symbol(symbol)
-                    .set_style(self.style);
+                    .set_style(style);
                 }
 
                 if d.1 > 8 {
